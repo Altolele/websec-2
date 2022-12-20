@@ -191,6 +191,13 @@ a.skiplink:focus {
     margin-block-end: 0;
     text-align: center;
     margin: 10px;
+    box-shadow: 0 4px 6px rgb(65 132 144 / 10%), 0 3px 6px rgb(0 0 0 / 8%);
+    cursor: pointer;
+}
+
+.el_list_select_stop:hover {
+    transition: all 0.4s;
+    box-shadow: 0 20px 40px rgb(65 132 144 / 10%), 0 9px 18px rgb(0 0 0 / 8%);
 }
 
 .list-unstyled{

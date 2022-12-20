@@ -12,6 +12,7 @@ document.querySelector('#sidebarCollapse').addEventListener('click', () => {
 
 let map;
 let savedStop = []
+let markers = new Map();
 
 window.onload = function(){
     if (localStorage.getItem('savedStop'))
@@ -66,51 +67,54 @@ DG.then(function () {
                     newItem.append(subHeader)
                     const body = document.createElement('div');
 
-                    sha1(stop.KS_ID["#text"] + "just_f0r_tests").then((response)=>{
-                        return response
-                    })
-                        .then(async (data) => {
-                            return await fetch(`https://tosamara.ru/api/v2/json?method=getFirstArrivalToStop&KS_ID=${stop.KS_ID["#text"]}&os=android&clientid=test&authkey=${data}`)
-                                .then(
-                                    response => response.json())
-                                .then(str => {
-                                    str.arrival.map(transport => {
-                                        const transInfo = document.createElement('div');
-                                        transInfo.className = "trans_info";
-                                        const type = document.createElement('p');
-                                        type.textContent = transport.type + " " + transport.number + " "
-                                        transInfo.append(type)
-                                        const transStopInfo = document.createElement('select');
-                                        const selectInfo = document.createElement('option');
-                                        selectInfo.selected = true
-                                        selectInfo.textContent = "будет через " + transport.time
-
-                                        transStopInfo.addEventListener("click", () => {
-                                            sha1(transport.hullNo + "just_f0r_tests").then((response)=>{
-                                                return response
-                                            }).then(async (data) => {
-                                                return await fetch(`https://tosamara.ru/api/v2/json?method=getTransportPosition&HULLNO=${transport.hullNo}&os=android&clientid=test&authkey=${data}`)
-                                                    .then(
-                                                        resp => resp.json())
-                                                    .then(next_str => {
-                                                        next_str.nextStops.map( next =>{
-                                                            const nextStop = document.createElement('option');
-                                                            nextStop.textContent = stops["stops"].stop.find(stop => stop.KS_ID["#text"] === next.KS_ID ).title["#text"] +  "будет через " + Math.round(+next.time / 60)
-                                                            transStopInfo.append(nextStop)
-                                                        })
-                                                    })
-                                            })
-                                        })
-
-                                        transStopInfo.append(selectInfo)
-                                        transInfo.append(transStopInfo)
-                                        body.append(transInfo)
-                                    })
-                                })
-                        })
-
                     newItem.append(body)
-                    DG.marker([stop.latitude["#text"], stop.longitude["#text"]], {title: stop.title["#text"]}).addTo(map).bindPopup(newItem);
+                    let marker = DG.marker([stop.latitude["#text"], stop.longitude["#text"]], {title: stop.title["#text"]}).addTo(map);
+                    marker.bindPopup(newItem);
+                    markers.set(stop.KS_ID["#text"], marker)
+                    marker.addEventListener("popupopen", ()=>{
+                        sha1(stop.KS_ID["#text"] + "just_f0r_tests").then((response)=>{
+                            return response
+                        })
+                            .then(async (data) => {
+                                return await fetch(`https://tosamara.ru/api/v2/json?method=getFirstArrivalToStop&KS_ID=${stop.KS_ID["#text"]}&os=android&clientid=test&authkey=${data}`)
+                                    .then(
+                                        response => response.json())
+                                    .then(str => {
+                                        str.arrival.map(transport => {
+                                            const transInfo = document.createElement('div');
+                                            transInfo.className = "trans_info";
+                                            const type = document.createElement('p');
+                                            type.textContent = transport.type + " " + transport.number + " "
+                                            transInfo.append(type)
+                                            const transStopInfo = document.createElement('select');
+                                            const selectInfo = document.createElement('option');
+                                            selectInfo.selected = true
+                                            selectInfo.textContent = "будет через " + transport.time
+
+                                            transStopInfo.addEventListener("click", () => {
+                                                sha1(transport.hullNo + "just_f0r_tests").then((response)=>{
+                                                    return response
+                                                }).then(async (data) => {
+                                                    return await fetch(`https://tosamara.ru/api/v2/json?method=getTransportPosition&HULLNO=${transport.hullNo}&os=android&clientid=test&authkey=${data}`)
+                                                        .then(
+                                                            resp => resp.json())
+                                                        .then(next_str => {
+                                                            next_str.nextStops.map( next =>{
+                                                                const nextStop = document.createElement('option');
+                                                                nextStop.textContent = stops["stops"].stop.find(stop => stop.KS_ID["#text"] === next.KS_ID ).title["#text"] +  "будет через " + Math.round(+next.time / 60)
+                                                                transStopInfo.append(nextStop)
+                                                            })
+                                                        })
+                                                })
+                                            })
+
+                                            transStopInfo.append(selectInfo)
+                                            transInfo.append(transStopInfo)
+                                            body.append(transInfo)
+                                        })
+                                    })
+                            })
+                    })
                 })
         })
 });
@@ -144,6 +148,12 @@ function renderSavedStop(){
         if(trans.textContent === ''){
             trans.textContent += "Пусто"
         }
+        newItem.addEventListener('click', () => {
+            map.setView([stop.latitude["#text"], stop.longitude["#text"]]);
+            document.querySelectorAll('#sidebar').forEach((block) => block.classList.remove('active'));
+            document.querySelectorAll('.overlay').forEach((block) => block.classList.remove('active'));
+            markers.get(stop.KS_ID["#text"]).openPopup();
+        });
         newItem.append(trans)
         list.append(newItem)
     })
